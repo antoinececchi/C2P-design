@@ -245,7 +245,7 @@ if __name__ == '__main__':
 	P6.set_ray(0.1)
 	P6.set_color("orange")
 	print(P2.safety_ray	)
-	g = Garden(12,15)
+	g = Garden()
 	g.add_plant(P1)
 	g.add_plant(P2)
 	g.add_plant(P3)
