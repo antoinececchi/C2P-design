@@ -86,7 +86,7 @@ def derivate_spring(P1,P2):
 	d  = distance_plants(P1,P2)
 	X_comp = X1/d 
 	Y_comp = Y1/d 
-	der_spring = np.array([X_comp,Y_comp]) + np.random.normal(0,0.1,2).reshape(2,1)
+	der_spring = np.array([X_comp,Y_comp]) #+ np.random.normal(0,0.1,2).reshape(2,1)
 	return der_spring
 
 def distance_plants(P1,P2):
@@ -114,11 +114,12 @@ def derivate_diff_surf(P1,P2,type_inter="friend"):
 	dp  = abs((-rho+D**2)/(2*D))
 	X   = d/R
 	Xp  = dp/Rp
-	print(P1.center.reshape(1,2),P2.center.reshape(1,2))
-	print(D)
-	print(type_inter,P1.color,P2.color)
+	#print(d,dp,P1.color,D,R+Rp)
+	#print(type_inter,P1.color,P2.color,X,Xp,d,dp)
+	#print("centers",P1.center,P2.center)
 	der_x = 2*(P1.center[0]-P2.center[0])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
 	der_y = 2*(P1.center[1]-P2.center[1])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
+	#print(der_x,der_y)
 	return np.array([der_x,der_y]).reshape(2,1)
 class Garden(plt.Figure):
 	def __init__(self,height = 1,width = 1):
@@ -138,6 +139,7 @@ class Garden(plt.Figure):
 		ax.clear()
 		if self.shown == 0 :
 			fig.show()	
+			print('là')
 		for plant in self.plantsList : 
 			c = plt.Circle((plant.center[0],plant.center[1]),plant.ray,color =plant.color)
 			ax.add_artist(c)
@@ -180,31 +182,25 @@ class Garden(plt.Figure):
 				#Ennemy
 				for ennemy in Garden_plant.ennemyPlants:
 					if distance_plants(Garden_plant,ennemy)<ennemy.ennemy_ray+Garden_plant.ennemy_ray:
-						update_center   -= 0.5*derivate_diff_surf(Garden_plant,ennemy,"ennemy")
+						update_center   += 0.5*derivate_diff_surf(Garden_plant,ennemy,"ennemy")
 						sum_der         += np.sum(update_center)	
 				#Neutral
-				Garden_plant.update_value =  LR*update_center
-			for plant1 in self.plantsList:
-				for plant2 in self.plantsList:
-					dist = distance_plants(plant1,plant2)
-					Gr   = plant1.safety_ray
-					Gf   = plant2.safety_ray
-					if plant1 != plant2 :
-						if dist<Gr+Gf and dist > Gr-Gf and dist > Gf-Gr:
-							update_center   += derivate_diff_surf(plant1,plant2,"safety")
+				for plant_safe in self.plantsList:
+					id
+					dist = distance_plants(Garden_plant,plant_safe)
+					Gr   = Garden_plant.ray
+					Gf   = plant_safe.ray
+					if plant_safe != Garden_plant :
+						if distance_plants(Garden_plant,plant_safe)<plant_safe.safety_ray+Garden_plant.safety_ray and dist >= Gr-Gf and dist > Gf-Gr:
+							update_center   += derivate_diff_surf(Garden_plant,plant_safe,"safety")
 							sum_der         += np.sum(update_center)
-						elif dist < Gf-Gr or dist < Gr-Gf:
-							pass
-					else : pass
-				plant1.update_value += LR*update_center
 
-			
+				Garden_plant.update_value =  LR*update_center
 				if isnan(update_center[0]):
 					break
 			#print(sum_der)
 			for G_plant in self.plantsList:
 				G_plant.update_center()
-				#Make sure we stay in the garden
 				if G_plant.center[0]+G_plant.ray>self.width : 
 					G_plant.center[0] = self.width-G_plant.ray
 				if G_plant.center[0]-G_plant.ray<0 : 
@@ -213,8 +209,10 @@ class Garden(plt.Figure):
 					G_plant.center[1] = self.height-G_plant.ray
 				if G_plant.center[1]-G_plant.ray<0 : 
 					G_plant.center[1] = G_plant.ray
-			if step%1000==0:
+			if step%100000==0:
+				print(sum_der)
 				self.showing(fig,ax)
+				LR = LR*0.99
 		return 0
 
 
@@ -227,11 +225,11 @@ if __name__ == '__main__':
 	P1.set_color("yellow")
 	P2 = Plant()
 	P2.set_center([0.75,0.75])
-	P2.set_ray(0.1)
+	P2.set_ray(0.05)
 	P2.set_color("red")
 	P3 = Plant()
 	P3.set_center([1.0,1.0])
-	P3.set_ray(0.1)	
+	P3.set_ray(0.12)	
 	P3.set_color("purple")
 	P4 = Plant()
 	P4.set_center([1.0,0.0])
