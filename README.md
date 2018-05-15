@@ -2,6 +2,6 @@
 
 ## Usage 
 Simply launch the following code line in the repo in which you cloned the project
-''' shell
+``` shell
 $python3 circle_graph.py
-'''
+```
