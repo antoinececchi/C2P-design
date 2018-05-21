@@ -79,9 +79,14 @@ def derivate_diff_surf(P1,P2,type_inter="friend"):
 	dp  = abs((-rho+D**2)/(2*D))
 	X   = d/R
 	Xp  = dp/Rp
+	gauss = exp(-((P1.center[1]-P2.center[1])**2)/(2*(Rp/3)))
+	common_surf = (R**2)*arccos(d/R)-d*np.sqrt(R**2-d**2)+(Rp**2)*arccos(dp/Rp)-dp*np.sqrt(Rp**2-dp**2) 
+	print(gauss)
 	der_x = 2*(P1.center[0]-P2.center[0])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
 	der_y = 2*(P1.center[1]-P2.center[1])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
-	return np.array([der_x,der_y]).reshape(2,1)
+	der_y += (P2.center[1]-P1.center[1])*common_surf/((Rp/3)**2)
+	print(der_x,der_y)
+	return np.array([der_x,der_y]*gauss).reshape(2,1)
 class Garden(plt.Figure):
 	def __init__(self,height = 1,width = 1):
 		self.height     = height
@@ -180,13 +185,13 @@ class Garden(plt.Figure):
 				if G_plant.center[1]-G_plant.ray<0 : 
 					G_plant.center[1] = G_plant.ray
 			if step%1000==0:
-				LR = LR*0.99
-			if step%20000==0:
+				LR = LR
+			if step%1000==0:
 				print(sum_der)
 				print(time.time()-t)
 				self.showing(fig,ax)
 				
-				break
+				#break
 
 				
 		return 0
@@ -230,9 +235,9 @@ if __name__ == '__main__':
 	P1.set_name("tomate")
 	P2.set_name("poivron")
 	print(g.nb_plants)
-	P1.add_friend(P2)
+	#P1.add_friend(P2)
 	P2.add_friend(P1)
-	P1.add_friend([P2,P3])
+	P1.add_friend(P2)
 	P3.add_ennemy(P2)
 	P3.add_friend(P4)
 	P1.add_ennemy(P4)
@@ -240,7 +245,7 @@ if __name__ == '__main__':
 	P4.add_ennemy([P2,P1])
 	P2.add_friend(P1)
 	P2.add_ennemy(P3)
-	P5.add_friend([P2,P3])
+	P5.add_friend(P2)
 	P5.add_ennemy(P4)
 	P6.add_friend(P3)
 	P6.add_ennemy(P1)
@@ -250,7 +255,7 @@ if __name__ == '__main__':
 	print(P1.center,P1.name,P1.color)
 	print(time.time()-t1)
 	t2= time.time()
-	g.optimize_garden(eps=1e-6,LR=5e-4)
+	g.optimize_garden(eps=1e-6,LR=1e-3)
 	print(time.time()-t2)
 	print(P2.center,P2.name,P2.color)
 	print(P1.center,P1.name,P1.color)
