@@ -45,41 +45,6 @@ class Plant():
 	def update_center(self):
 		self.center += self.update_value
 
-def derivate_surf_sameR(P1,P2):
-	#TODO :  - add sqrt part + spring force
-	#		 - Update this function to non similar ray cases
-	#        - Put it in a class ?
-	X1 = P1.center[0]-P2.center[0]
-	Y1 = P1.center[1]-P2.center[1]
-	d  = distance_plants(P1,P2)
-	#To be coded in a better way because it is too long (add distances for instance)
-	Y  = np.sqrt(P1.ray*2-(d**2)/4)/d
-	sqrt_part   = -np.array([X1*(Y-Y**-1),Y1*(Y-Y**-1)])
-	arccos_part = np.array([-2*P1.ray*((X1)/np.sqrt((X1**2+Y1**2-((X1**2+Y1**2)**2)/(4*P1.ray**2)))),-2*P1.ray*((Y1)/np.sqrt((X1**2+Y1**2-((X1**2+Y1**2)**2)/(4*P1.ray**2))))])
-	return arccos_part.reshape(2,1)+sqrt_part.reshape(2,1)
-def derivate_surf_safety(P1,P2):
-	#TODO :  - add sqrt part + spring force
-	#		 - Update this function to non similar ray cases
-	#        - Put it in a class ?
-	X1 = P1.center[0]-P2.center[0]
-	Y1 = P1.center[1]-P2.center[1]
-	d  = distance_plants(P1,P2)
-	#To be coded in a better way because it is too long (add distances for instance)
-	Y  = np.sqrt(P1.safety_ray**2-(d**2)/4)/d
-	sqrt_part   = -np.array([X1*(Y-Y**-1),Y1*(Y-Y**-1)])
-	arccos_part = np.array([-2*P1.safety_ray*((X1)/np.sqrt((X1**2+Y1**2-((X1**2+Y1**2)**2)/(4*P1.safety_ray**2)))),-2*P1.safety_ray*((Y1)/np.sqrt((X1**2+Y1**2-((X1**2+Y1**2)**2)/(4*P1.safety_ray**2))))])
-	return arccos_part.reshape(2,1)+sqrt_part.reshape(2,1)
-#def derivate_ennemy(P1,P2) : 
-#	return -derivate_surf_sameR(P1,P2)
-def derivate_ennemy(P1,P2):
-	X1 = P1.center[0]-P2.center[0]
-	Y1 = P1.center[1]-P2.center[1]
-	d  = distance_plants(P1,P2)
-	#To be coded in a better way because it is too long (add distances for instance)
-	Y  = np.sqrt(P1.ennemy_ray**2-(d**2)/4)/d
-	sqrt_part   = -np.array([X1*(Y-Y**-1),Y1*(Y-Y**-1)])
-	arccos_part = np.array([-2*P1.ennemy_ray*((X1)/np.sqrt((X1**2+Y1**2-((X1**2+Y1**2)**2)/(4*P1.ennemy_ray**2)))),-2*P1.ennemy_ray*((Y1)/np.sqrt((X1**2+Y1**2-((X1**2+Y1**2)**2)/(4*P1.ennemy_ray**2))))])
-	return -arccos_part.reshape(2,1)-sqrt_part.reshape(2,1)
 def derivate_spring(P1,P2):
 	X1 = P1.center[0]-P2.center[0]
 	Y1 = P1.center[1]-P2.center[1]
@@ -114,12 +79,8 @@ def derivate_diff_surf(P1,P2,type_inter="friend"):
 	dp  = abs((-rho+D**2)/(2*D))
 	X   = d/R
 	Xp  = dp/Rp
-	#print(d,dp,P1.color,D,R+Rp)
-	#print(type_inter,P1.color,P2.color,X,Xp,d,dp)
-	#print("centers",P1.center,P2.center)
 	der_x = 2*(P1.center[0]-P2.center[0])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
 	der_y = 2*(P1.center[1]-P2.center[1])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
-	#print(der_x,der_y)
 	return np.array([der_x,der_y]).reshape(2,1)
 class Garden(plt.Figure):
 	def __init__(self,height = 1,width = 1):
@@ -153,14 +114,21 @@ class Garden(plt.Figure):
 		
 
 	def optimize_garden(self,eps,LR):
-		#TODO : add a check wether plants are close enough or not
-		#update_center = LR*derivate_surf_sameR(self.plantsList[0],self.plantsList[1])
+		'''
+		This methods enables the gradient descent for the garden
+		For each plant, we compute : 
+		- Derivate of the surface when plants are close enough  
+		- One for friends
+		- One for ennemies
+		- One for all the "safety zones" of all the plants.
+		'''
 		sum_der = 100*eps
 		fig = plt.figure(figsize=(8,8))
 		ax = fig.add_subplot(111)
 		ax.set_xlim([0,self.width])
 		print(self.width)
 		step = 0 
+		t = time.time()
 		while  abs(sum_der) > eps: 
 			step +=1
 			sum_der = 0
@@ -171,28 +139,30 @@ class Garden(plt.Figure):
 					dist = distance_plants(Garden_plant,friend)
 					Gr   = Garden_plant.ray
 					Gf   = friend.ray
-					if distance_plants(Garden_plant,friend)<friend.ray+Garden_plant.ray and dist >= Gr-Gf and dist > Gf-Gr :
+					if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr :
 						update_center   += -1*derivate_diff_surf(Garden_plant,friend)-0.1*derivate_spring(Garden_plant,friend)
 						sum_der         += np.sum(update_center)
-					elif distance_plants(Garden_plant,friend)<Garden_plant.ray-friend.ray or  distance_plants(Garden_plant,friend)<friend.ray-Garden_plant.ray :
+					elif dist<Gr-Gf or  dist<Gf-Gr:
 						pass
 					else : 
 						update_center   += -0.1*derivate_spring(Garden_plant,friend)
 						sum_der         += np.sum(update_center)
 				#Ennemy
 				for ennemy in Garden_plant.ennemyPlants:
-					if distance_plants(Garden_plant,ennemy)<ennemy.ennemy_ray+Garden_plant.ennemy_ray:
+					dist = distance_plants(Garden_plant,ennemy)
+					Gr   = Garden_plant.ennemy_ray
+					Gf   = ennemy.ennemy_ray
+					if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr :
 						update_center   += 0.5*derivate_diff_surf(Garden_plant,ennemy,"ennemy")
 						sum_der         += np.sum(update_center)	
 				#Neutral
 				for plant_safe in self.plantsList:
-					id
 					dist = distance_plants(Garden_plant,plant_safe)
-					Gr   = Garden_plant.ray
-					Gf   = plant_safe.ray
+					Gr   = Garden_plant.safety_ray
+					Gf   = plant_safe.safety_ray
 					if plant_safe != Garden_plant :
-						if distance_plants(Garden_plant,plant_safe)<plant_safe.safety_ray+Garden_plant.safety_ray and dist >= Gr-Gf and dist > Gf-Gr:
-							update_center   += derivate_diff_surf(Garden_plant,plant_safe,"safety")
+						if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr:
+							update_center   += 10*derivate_diff_surf(Garden_plant,plant_safe,"safety")
 							sum_der         += np.sum(update_center)
 
 				Garden_plant.update_value =  LR*update_center
@@ -209,16 +179,23 @@ class Garden(plt.Figure):
 					G_plant.center[1] = self.height-G_plant.ray
 				if G_plant.center[1]-G_plant.ray<0 : 
 					G_plant.center[1] = G_plant.ray
-			if step%100000==0:
-				print(sum_der)
-				self.showing(fig,ax)
+			if step%1000==0:
 				LR = LR*0.99
+			if step%20000==0:
+				print(sum_der)
+				print(time.time()-t)
+				self.showing(fig,ax)
+				
+				break
+
+				
 		return 0
 
 
 
 
 if __name__ == '__main__':
+	t1 = time.time()
 	P1 = Plant()
 	P1.set_center([0.0,1.0])
 	P1.set_ray(0.1)
@@ -243,7 +220,7 @@ if __name__ == '__main__':
 	P6.set_ray(0.1)
 	P6.set_color("orange")
 	print(P2.safety_ray	)
-	g = Garden()
+	g = Garden(3,3)
 	g.add_plant(P1)
 	g.add_plant(P2)
 	g.add_plant(P3)
@@ -271,9 +248,10 @@ if __name__ == '__main__':
 	#print(derivate_surf_sameR(g.plantsList[0],g.plantsList[1])+g.plantsList[0].center)
 	print(P2.center,P2.name,P2.color)
 	print(P1.center,P1.name,P1.color)
-	t = time.time()
+	print(time.time()-t1)
+	t2= time.time()
 	g.optimize_garden(eps=1e-6,LR=5e-4)
-	print(time.time()-t)
+	print(time.time()-t2)
 	print(P2.center,P2.name,P2.color)
 	print(P1.center,P1.name,P1.color)
 	plt.show()
