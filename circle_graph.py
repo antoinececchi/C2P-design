@@ -126,6 +126,7 @@ class Garden(plt.Figure):
 		- One for friends
 		- One for ennemies
 		- One for all the "safety zones" of all the plants.
+		Still have to find an idea to deal with the cases in which the plants "follow" one another and leave to the infiny
 		'''
 		sum_der = 100*eps
 		fig = plt.figure(figsize=(8,8))
@@ -210,11 +211,11 @@ if __name__ == '__main__':
 	P2.set_ray(0.05)
 	P2.set_color("red")
 	P3 = Plant()
-	P3.set_center([1.0,1.0])
+	P3.set_center([1.0,1.5])
 	P3.set_ray(0.12)	
 	P3.set_color("purple")
 	P4 = Plant()
-	P4.set_center([1.0,0.0])
+	P4.set_center([2.0,0.0])
 	P4.set_ray(0.1)
 	P5 = Plant()
 	P5.set_center([0.2,0.2])
@@ -224,8 +225,8 @@ if __name__ == '__main__':
 	P6.set_center([0.3,0.24])
 	P6.set_ray(0.1)
 	P6.set_color("orange")
-	print(P2.safety_ray	)
-	g = Garden(3,3)
+	
+	g = Garden(5,5)
 	g.add_plant(P1)
 	g.add_plant(P2)
 	g.add_plant(P3)
@@ -249,13 +250,13 @@ if __name__ == '__main__':
 	P5.add_ennemy(P4)
 	P6.add_friend(P3)
 	P6.add_ennemy(P1)
-
+	print(P3.friendPlants[0].color,P3.ennemyPlants[0].color)
 	#print(derivate_surf_sameR(g.plantsList[0],g.plantsList[1])+g.plantsList[0].center)
 	print(P2.center,P2.name,P2.color)
 	print(P1.center,P1.name,P1.color)
 	print(time.time()-t1)
 	t2= time.time()
-	g.optimize_garden(eps=1e-6,LR=1e-3)
+	#g.optimize_garden(eps=1e-6,LR=1e-3)
 	print(time.time()-t2)
 	print(P2.center,P2.name,P2.color)
 	print(P1.center,P1.name,P1.color)
