@@ -42,8 +42,9 @@ class Plant():
 		self.name = name
 	def set_color(self,color):
 		self.color = color
-	def update_center(self):
-		self.center += self.update_value
+	def update_center(self,LR):
+		self.center += LR*self.update_value
+
 
 def derivate_spring(P1,P2):
 	X1 = P1.center[0]-P2.center[0]
@@ -81,11 +82,9 @@ def derivate_diff_surf(P1,P2,type_inter="friend"):
 	Xp  = dp/Rp
 	gauss = exp(-((P1.center[1]-P2.center[1])**2)/(2*(Rp/3)))
 	common_surf = (R**2)*arccos(d/R)-d*np.sqrt(R**2-d**2)+(Rp**2)*arccos(dp/Rp)-dp*np.sqrt(Rp**2-dp**2) 
-	print(gauss)
 	der_x = 2*(P1.center[0]-P2.center[0])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
 	der_y = 2*(P1.center[1]-P2.center[1])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
 	der_y += (P2.center[1]-P1.center[1])*common_surf/((Rp/3)**2)
-	print(der_x,der_y)
 	return np.array([der_x,der_y]*gauss).reshape(2,1)
 class Garden(plt.Figure):
 	def __init__(self,height = 1,width = 1):
@@ -115,6 +114,18 @@ class Garden(plt.Figure):
 		if self.shown == 0 : 
 			time.sleep(1)
 			self.shown = 1
+	def return_centers(self):
+		ret = self.plantsList[0].center
+		for plant in self.plantsList : 
+			if plant != self.plantsList[0]:
+				ret = np.concatenate((ret,plant.center))
+		return ret
+	def return_ders(self):
+		ret = self.plantsList[0].update_value
+		for plant in self.plantsList : 
+			if plant != self.plantsList[0]:
+				ret = np.concatenate((ret,plant.update_value))
+		return ret
 
 		
 
@@ -138,6 +149,7 @@ class Garden(plt.Figure):
 		while  abs(sum_der) > eps: 
 			step +=1
 			sum_der = 0
+			der_diff = np.empty([0,0])
 			for Garden_plant in self.plantsList:
 				update_center = np.array([0.0,0.0]).reshape(2,1)
 				#Friends
@@ -151,7 +163,7 @@ class Garden(plt.Figure):
 					elif dist<Gr-Gf or  dist<Gf-Gr:
 						pass
 					else : 
-						update_center   += -0.1*derivate_spring(Garden_plant,friend)
+						update_center   += -1*derivate_spring(Garden_plant,friend)
 						sum_der         += np.sum(update_center)
 				#Ennemy
 				for ennemy in Garden_plant.ennemyPlants:
@@ -169,14 +181,28 @@ class Garden(plt.Figure):
 					if plant_safe != Garden_plant :
 						if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr:
 							update_center   += 10*derivate_diff_surf(Garden_plant,plant_safe,"safety")
+							#un seul sum_der semble suffisant et plus juste
 							sum_der         += np.sum(update_center)
-
-				Garden_plant.update_value =  LR*update_center
+				
+				Garden_plant.update_value =  update_center #penser à remultiplier(mettre le LR en argument par exemple)
 				if isnan(update_center[0]):
 					break
+				if der_diff.shape[0] :
+					der_diff = np.concatenate((der_diff,update_center))
+				else : 
+					der_diff = update_center 
+			if step > 2 : 
+				center_diffs = self.return_centers()-centers_old
+				der_diffs    = old_ders-der_diff
+				LR           = (np.transpose(center_diffs).dot(der_diffs)/np.linalg.norm(der_diffs,2)**2)[0]
+				print(LR)
+				
+			centers_old = self.return_centers()
+			old_ders    = der_diff
+
 			#print(sum_der)
 			for G_plant in self.plantsList:
-				G_plant.update_center()
+				G_plant.update_center(LR)
 				if G_plant.center[0]+G_plant.ray>self.width : 
 					G_plant.center[0] = self.width-G_plant.ray
 				if G_plant.center[0]-G_plant.ray<0 : 
@@ -185,13 +211,14 @@ class Garden(plt.Figure):
 					G_plant.center[1] = self.height-G_plant.ray
 				if G_plant.center[1]-G_plant.ray<0 : 
 					G_plant.center[1] = G_plant.ray
+
 			if step%1000==0:
 				LR = LR
 			if step%1000==0:
-				print(sum_der)
-				print(time.time()-t)
+				#print(sum_der)
+				#print(time.time()-t)
 				self.showing(fig,ax)
-				
+			
 				#break
 
 				
@@ -236,6 +263,7 @@ if __name__ == '__main__':
 	P1.set_name("tomate")
 	P2.set_name("poivron")
 	print(g.nb_plants)
+	print(g.return_centers())
 	#P1.add_friend(P2)
 	P2.add_friend(P1)
 	P1.add_friend(P2)
@@ -256,7 +284,7 @@ if __name__ == '__main__':
 	print(P1.center,P1.name,P1.color)
 	print(time.time()-t1)
 	t2= time.time()
-	#g.optimize_garden(eps=1e-6,LR=1e-3)
+	g.optimize_garden(eps=1e-6,LR=1e-1)
 	print(time.time()-t2)
 	print(P2.center,P2.name,P2.color)
 	print(P1.center,P1.name,P1.color)
