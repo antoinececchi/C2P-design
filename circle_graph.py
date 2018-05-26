@@ -214,7 +214,7 @@ class Garden(plt.Figure):
 
 			if step%1000==0:
 				LR = LR
-			if step%1000==0:
+			if step%1==0:
 				#print(sum_der)
 				#print(time.time()-t)
 				self.showing(fig,ax)
