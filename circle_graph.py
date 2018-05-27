@@ -3,8 +3,21 @@ import scipy
 from matplotlib import pyplot as plt 
 from pylab import *
 import time
+#TODO : 
+#Split into several files
+#Add threads to accelerate the processing 
+#Find a good stopping criteria (perhaps the movement of all the plants)
+#Que veut dire "espacer des plantes " ? Pour l'instant les zones de sécurité sont de centre à centre.
 
 class Plant():
+	'''
+	Plant class enabling to : 
+	Define a new plant and update its different properties (center --> set_center or set_x then set_y, ray --> set ray)
+	Add enemies or friends as a list of plants. 
+	Compute distance between the plant and another(the distance is between the centers)
+	Compute common surface between the plants (only for friendship for now)
+	Compute derivatives for these surfaces and "spring" forces
+	'''
 	def __init__(self,center = [0,0],ray =0):
 		self.center = np.array(center).reshape(2,1)
 		self.ray    = ray
@@ -16,18 +29,24 @@ class Plant():
 		self.update_value = np.array([0,0])	
 		self.safety_ray   = ray/10
 		self.ennemy_ray   = ray*2
+
 	def set_center(self,center):
 		self.center = np.array(center).reshape(2,1)
+
 	def get_center(self):
 		return self.center
+
 	def set_ray(self,value):
 		self.ray = value
 		self.safety_ray   = value/3
 		self.ennemy_ray   = value*2
+
 	def set_x(self,x):
 		self.center[0]=x
+
 	def set_y(self,y):
 		self.center[1]=y
+
 	def add_friend(self,plant):
 		if isinstance(plant,list):
 			self.friendPlants += plant
@@ -38,54 +57,62 @@ class Plant():
 			self.ennemyPlants += plant
 		else :
 			self.ennemyPlants += [plant]
+
 	def set_name(self,name):
 		self.name = name
+
 	def set_color(self,color):
 		self.color = color
+
 	def update_center(self,LR):
 		self.center += LR*self.update_value
+	def distance_plants(self,P2):
+		X  = self.center-P2.center
+		dist = np.sqrt(np.transpose(X).dot(X))[0]
+		return dist
+
+	def derivate_diff_surf(self,P2,type_inter="friend"):
+		D   = self.distance_plants(P2)
+		if type_inter=="friend":
+			rho = self.ray**2-P2.ray**2
+			R   = self.ray
+			Rp  = P2.ray
+		elif type_inter == "ennemy":
+			rho = self.ennemy_ray**2-P2.ennemy_ray**2
+			R   = self.ennemy_ray
+			Rp  = P2.ennemy_ray
+		elif type_inter == "safety":
+			rho = self.safety_ray**2-P2.safety_ray**2
+			R   = self.safety_ray
+			Rp  = P2.safety_ray
+		d   = abs((rho+D**2)/(2*D))
+		dp  = abs((-rho+D**2)/(2*D))
+		X   = d/R
+		Xp  = dp/Rp
+		gauss = exp(-((self.center[1]-P2.center[1])**2)/(2*(Rp/3)))
+		common_surf = (R**2)*arccos(d/R)-d*np.sqrt(R**2-d**2)+(Rp**2)*arccos(dp/Rp)-dp*np.sqrt(Rp**2-dp**2) 
+		der_x = 2*(self.center[0]-P2.center[0])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
+		der_y = 2*(self.center[1]-P2.center[1])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
+		der_y += (P2.center[1]-self.center[1])*common_surf/((Rp/3)**2)
+		return np.array([der_x,der_y]*gauss).reshape(2,1)
 
 
-def derivate_spring(P1,P2):
-	X1 = P1.center[0]-P2.center[0]
-	Y1 = P1.center[1]-P2.center[1]
-	d  = distance_plants(P1,P2)
-	X_comp = X1/d 
-	Y_comp = Y1/d 
-	der_spring = np.array([X_comp,Y_comp]) #+ np.random.normal(0,0.1,2).reshape(2,1)
-	return der_spring
+	def derivate_spring(self,P2):
+		X1 = self.center[0]-P2.center[0]
+		Y1 = self.center[1]-P2.center[1]
+		d  = self.distance_plants(P2)
+		print("disance",d)
+		X_comp = X1/d 
+		Y_comp = Y1/d 
+		der_spring = np.array([X_comp,Y_comp]) #+ np.random.normal(0,0.1,2).reshape(2,1)
+		return der_spring
 
-def distance_plants(P1,P2):
-	X  = P1.center-P2.center
-	dist = np.sqrt(np.transpose(X).dot(X))[0]
-	return dist
-def common_surf(P1,P2): 	
-	d = distance_plants(P1,P2)
-	return 2*P1.ray*np.arccos(d/2/P1.ray) - d*np.sqrt(P1.ray**2-(d/2)**2)
-def derivate_diff_surf(P1,P2,type_inter="friend"):
-	D   = distance_plants(P1,P2)
-	if type_inter=="friend":
-		rho = P1.ray**2-P2.ray**2
-		R   = P1.ray
-		Rp  = P2.ray
-	elif type_inter == "ennemy":
-		rho = P1.ennemy_ray**2-P2.ennemy_ray**2
-		R   = P1.ennemy_ray
-		Rp  = P2.ennemy_ray
-	elif type_inter == "safety":
-		rho = P1.safety_ray**2-P2.safety_ray**2
-		R   = P1.safety_ray
-		Rp  = P2.safety_ray
-	d   = abs((rho+D**2)/(2*D))
-	dp  = abs((-rho+D**2)/(2*D))
-	X   = d/R
-	Xp  = dp/Rp
-	gauss = exp(-((P1.center[1]-P2.center[1])**2)/(2*(Rp/3)))
-	common_surf = (R**2)*arccos(d/R)-d*np.sqrt(R**2-d**2)+(Rp**2)*arccos(dp/Rp)-dp*np.sqrt(Rp**2-dp**2) 
-	der_x = 2*(P1.center[0]-P2.center[0])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
-	der_y = 2*(P1.center[1]-P2.center[1])*(((D+X*R)*R*X**2)/sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/sqrt(1-Xp**2))/(D**2)
-	der_y += (P2.center[1]-P1.center[1])*common_surf/((Rp/3)**2)
-	return np.array([der_x,der_y]*gauss).reshape(2,1)
+
+	def common_surf(P1,P2): 	
+		d = self.distance_plants(P2)
+		return 2*P1.ray*np.arccos(d/2/P1.ray) - d*np.sqrt(P1.ray**2-(d/2)**2)
+#Mettre les fonctions de dérivée en méthode de la classe Plant
+
 class Garden(plt.Figure):
 	def __init__(self,height = 1,width = 1):
 		self.height     = height
@@ -93,6 +120,7 @@ class Garden(plt.Figure):
 		self.plantsList = [] 
 		self.nb_plants  = 0
 		self.shown      = 0
+
 	def add_plant(self,plant):
 		if isinstance(plant,list):
 			self.plantsList += plant
@@ -100,6 +128,7 @@ class Garden(plt.Figure):
 		else :
 			self.plantsList += [plant]
 			self.nb_plants  += 1
+
 	def showing(self,fig,ax):
 		ax.clear()
 		if self.shown == 0 :
@@ -114,12 +143,14 @@ class Garden(plt.Figure):
 		if self.shown == 0 : 
 			time.sleep(1)
 			self.shown = 1
+
 	def return_centers(self):
 		ret = self.plantsList[0].center
 		for plant in self.plantsList : 
 			if plant != self.plantsList[0]:
 				ret = np.concatenate((ret,plant.center))
 		return ret
+
 	def return_ders(self):
 		ret = self.plantsList[0].update_value
 		for plant in self.plantsList : 
@@ -135,7 +166,7 @@ class Garden(plt.Figure):
 		For each plant, we compute : 
 		- Derivate of the surface when plants are close enough  
 		- One for friends
-		- One for ennemies
+		- One for enemies
 		- One for all the "safety zones" of all the plants.
 		Still have to find an idea to deal with the cases in which the plants "follow" one another and leave to the infiny
 		'''
@@ -154,33 +185,33 @@ class Garden(plt.Figure):
 				update_center = np.array([0.0,0.0]).reshape(2,1)
 				#Friends
 				for friend in Garden_plant.friendPlants:
-					dist = distance_plants(Garden_plant,friend)
+					dist = Garden_plant.distance_plants(friend)
 					Gr   = Garden_plant.ray
 					Gf   = friend.ray
 					if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr :
-						update_center   += -1*derivate_diff_surf(Garden_plant,friend)-0.1*derivate_spring(Garden_plant,friend)
+						update_center   += -1*Garden_plant.derivate_diff_surf(friend)-0.1*Garden_plant.derivate_spring(friend)
 						sum_der         += np.sum(update_center)
 					elif dist<Gr-Gf or  dist<Gf-Gr:
 						pass
 					else : 
-						update_center   += -1*derivate_spring(Garden_plant,friend)
+						update_center   += -1*Garden_plant.derivate_spring(friend)
 						sum_der         += np.sum(update_center)
 				#Ennemy
 				for ennemy in Garden_plant.ennemyPlants:
-					dist = distance_plants(Garden_plant,ennemy)
+					dist = Garden_plant.distance_plants(ennemy)
 					Gr   = Garden_plant.ennemy_ray
 					Gf   = ennemy.ennemy_ray
 					if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr :
-						update_center   += 0.5*derivate_diff_surf(Garden_plant,ennemy,"ennemy")
+						update_center   += 0.5*Garden_plant.derivate_diff_surf(ennemy,"ennemy")
 						sum_der         += np.sum(update_center)	
 				#Neutral
 				for plant_safe in self.plantsList:
-					dist = distance_plants(Garden_plant,plant_safe)
+					dist = Garden_plant.distance_plants(plant_safe)
 					Gr   = Garden_plant.safety_ray
 					Gf   = plant_safe.safety_ray
 					if plant_safe != Garden_plant :
 						if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr:
-							update_center   += 10*derivate_diff_surf(Garden_plant,plant_safe,"safety")
+							update_center   += 10*Garden_plant.derivate_diff_surf(plant_safe,"safety")
 							#un seul sum_der semble suffisant et plus juste
 							sum_der         += np.sum(update_center)
 				
