@@ -7,9 +7,9 @@ from plants import Plant
 #Split into several files
 #Add threads to accelerate the processing 
 #Find a good stopping criteria (perhaps the movement of all the plants)
-centre.
 #Remove the from pylab import *, quite dirty
-#Que veut dire "espacer des plantes " ? Pour l'instant les zones de sécurité sont de centre à 
+#Que veut dire "espacer des plantes " ? Pour l'instant les zones de sécurité sont de centre à centre.
+
 
 
 if __name__ == '__main__':
