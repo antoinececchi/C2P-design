@@ -8,6 +8,7 @@ class Plant():
 	Compute common surface between the plants (only for friendship for now)
 	Compute derivatives for these surfaces and "spring" forces
 	'''
+	#Todo : ajouter les threads (un par plante ? ici)
 	def __init__(self,center = [0,0],ray =0):
 		self.center = np.array(center).reshape(2,1)
 		self.ray    = ray

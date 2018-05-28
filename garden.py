@@ -1,7 +1,7 @@
 from pylab import *
 import time
 from plants import Plant
-class Garden(plt.Figure):
+class Garden():
 	def __init__(self,height = 1,width = 1):
 		self.height     = height
 		self.width      = width
