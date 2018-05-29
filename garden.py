@@ -45,7 +45,11 @@ class Garden():
 			if plant != self.plantsList[0]:
 				ret = np.concatenate((ret,plant.update_value))
 		return ret
-
+	def get_number_inter(self):
+		nb_inter = 0
+		for P in self.plantsList:
+			nb_inter += len(P.friendPlants)+len(P.ennemyPlants)
+		return nb_inter
 		
 
 	def optimize_garden(self,eps,LR):
@@ -65,7 +69,8 @@ class Garden():
 		print(self.width)
 		step = 0 
 		t = time.time()
-		while  abs(sum_der) > eps: 
+		stop_value = 100
+		while  abs(stop_value) > eps: 
 			step +=1
 			sum_der = 0
 			der_diff = np.empty([0,0])
@@ -103,23 +108,24 @@ class Garden():
 							#un seul sum_der semble suffisant et plus juste
 							sum_der         += np.sum(update_center)
 				
-				Garden_plant.update_value =  update_center #penser à remultiplier(mettre le LR en argument par exemple)
+				Garden_plant.update_value =  update_center 
 				if isnan(update_center[0]):
 					break
 				if der_diff.shape[0] :
 					der_diff = np.concatenate((der_diff,update_center))
 				else : 
-					der_diff = update_center 
+					der_diff = update_center
+
 			if step > 2 : 
 				center_diffs = self.return_centers()-centers_old
 				der_diffs    = old_ders-der_diff
 				LR           = (np.transpose(center_diffs).dot(der_diffs)/np.linalg.norm(der_diffs,2)**2)[0]
-				print(LR)
+				stop_value   = np.mean(center_diffs)
 				
 			centers_old = self.return_centers()
 			old_ders    = der_diff
 
-			#print(sum_der)
+
 			for G_plant in self.plantsList:
 				G_plant.update_center(LR)
 				if G_plant.center[0]+G_plant.ray>self.width : 
@@ -131,14 +137,8 @@ class Garden():
 				if G_plant.center[1]-G_plant.ray<0 : 
 					G_plant.center[1] = G_plant.ray
 
-			if step%1000==0:
-				LR = LR
-			if step%1==0:
-				#print(sum_der)
-				#print(time.time()-t)
+			if step%1000==0 or step == 1:
 				self.showing(fig,ax)
-			
-				#break
 
 				
 		return 0

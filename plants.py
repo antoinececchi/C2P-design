@@ -1,5 +1,6 @@
 import numpy as np
-class Plant():
+from threading import Thread
+class Plant(Thread):
 	'''
 	Plant class enabling to : 
 	Define a new plant and update its different properties (center --> set_center or set_x then set_y, ray --> set ray)
@@ -10,6 +11,7 @@ class Plant():
 	'''
 	#Todo : ajouter les threads (un par plante ? ici)
 	def __init__(self,center = [0,0],ray =0):
+		Thread.__init__(self)
 		self.center = np.array(center).reshape(2,1)
 		self.ray    = ray
 		self.name   ="Unknown plant"
@@ -18,8 +20,8 @@ class Plant():
 		self.ennemyPlants = []
 		self.color        = "green"	
 		self.update_value = np.array([0,0])	
-		self.safety_ray   = ray/10
-		self.ennemy_ray   = ray*2
+		self.safety_ray   = ray
+		self.ennemy_ray   = ray
 
 	def set_center(self,center):
 		self.center = np.array(center).reshape(2,1)
@@ -29,8 +31,12 @@ class Plant():
 
 	def set_ray(self,value):
 		self.ray = value
-		self.safety_ray   = value/3
-		self.ennemy_ray   = value*2
+
+	def set_ennemy_ray(self,ray):
+		self.ennemy_ray = ray
+	def set_safety_ray(self,ray):
+		self.safety_ray = ray
+	
 
 	def set_x(self,x):
 		self.center[0]=x
@@ -39,15 +45,31 @@ class Plant():
 		self.center[1]=y
 
 	def add_friend(self,plant):
-		if isinstance(plant,list):
-			self.friendPlants += plant
-		else :
-			self.friendPlants += [plant]
+		if not(isinstance(plant,list)):
+			plant = [plant]
+		for pl in plant : 
+			if pl in self.friendPlants : 
+				print("Can't add twice the same plant in the friends list")
+			elif pl in self.ennemyPlants :
+				print("can't be both friend and ennemy")
+			elif pl == self : 
+				print("Can't add the plant to its own friends")
+			else:
+				self.friendPlants += plant
+
 	def add_ennemy(self,plant):
-		if isinstance(plant,list):
-			self.ennemyPlants += plant
-		else :
-			self.ennemyPlants += [plant]
+		if not(isinstance(plant,list)):
+			plant = [plant]
+		for pl in plant : 
+			if pl in self.ennemyPlants : 
+				print("Can't add twice the same plant in the ennemy list")
+			elif pl in self.friendPlants:
+				print("can't be both ennemy and friend")
+			elif pl == self : 
+				print("Can't add the plant to its own ennemies")
+			else:
+				self.ennemyPlants += plant
+
 
 	def set_name(self,name):
 		self.name = name
@@ -94,7 +116,7 @@ class Plant():
 		d  = self.distance_plants(P2)
 		X_comp = X1/d 
 		Y_comp = Y1/d 
-		der_spring = np.array([X_comp,Y_comp]) #+ np.random.normal(0,0.1,2).reshape(2,1)
+		der_spring = np.array([X_comp,Y_comp])
 		return der_spring
 
 
