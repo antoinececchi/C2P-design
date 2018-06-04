@@ -8,7 +8,7 @@ class Garden():
 		self.plantsList = [] 
 		self.nb_plants  = 0
 		self.shown      = 0
-
+		
 	def add_plant(self,plant):
 		if isinstance(plant,list):
 			self.plantsList += plant
@@ -61,15 +61,21 @@ class Garden():
 		- One for enemies
 		- One for all the "safety zones" of all the plants.
 		Still have to find an idea to deal with the cases in which the plants "follow" one another and leave to the infiny
+		TODO : problems of Nan when ||.|| = 0  for the updating of the LR for instance in the first garden when the sixth plant is not connected. Furthermore :
+		Problems when P1 is not connected either. 
 		'''
 		sum_der = 100*eps
-		fig = plt.figure(figsize=(8,8))
+		fig = plt.figure(figsize=(self.width,self.height))
 		ax = fig.add_subplot(111)
 		ax.set_xlim([0,self.width])
 		print(self.width)
 		step = 0 
 		t = time.time()
 		stop_value = 100
+		if self.height >= self.width : 
+			axis = 0
+		else :
+			axis = 1
 		while  abs(stop_value) > eps: 
 			step +=1
 			sum_der = 0
@@ -82,7 +88,7 @@ class Garden():
 					Gr   = Garden_plant.ray
 					Gf   = friend.ray
 					if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr :
-						update_center   += -1*Garden_plant.derivate_diff_surf(friend)-0.1*Garden_plant.derivate_spring(friend)
+						update_center   += -1*Garden_plant.derivate_diff_surf(friend,axis=axis)-0.1*Garden_plant.derivate_spring(friend)
 						sum_der         += np.sum(update_center)
 					elif dist<Gr-Gf or  dist<Gf-Gr:
 						pass
@@ -95,7 +101,7 @@ class Garden():
 					Gr   = Garden_plant.ennemy_ray
 					Gf   = ennemy.ennemy_ray
 					if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr :
-						update_center   += 0.5*Garden_plant.derivate_diff_surf(ennemy,"ennemy")
+						update_center   += 3*Garden_plant.derivate_diff_surf(ennemy,"ennemy",axis=axis)
 						sum_der         += np.sum(update_center)	
 				#Neutral
 				for plant_safe in self.plantsList:
@@ -104,9 +110,11 @@ class Garden():
 					Gf   = plant_safe.safety_ray
 					if plant_safe != Garden_plant :
 						if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr:
-							update_center   += 10*Garden_plant.derivate_diff_surf(plant_safe,"safety")
+							update_center   += 15*Garden_plant.derivate_diff_surf(plant_safe,"safety",axis=axis)
 							#un seul sum_der semble suffisant et plus juste
 							sum_der         += np.sum(update_center)
+						if Garden_plant.family is not None and Garden_plant.family == plant_safe.family:
+							update_center -= 15*Garden_plant.derivate_alignment(plant_safe,axis=axis)
 				
 				Garden_plant.update_value =  update_center 
 				if isnan(update_center[0]):
@@ -117,8 +125,10 @@ class Garden():
 					der_diff = update_center
 
 			if step > 2 : 
+				print("*"*100,step)
 				center_diffs = self.return_centers()-centers_old
 				der_diffs    = old_ders-der_diff
+				print(der_diffs,center_diffs)
 				LR           = (np.transpose(center_diffs).dot(der_diffs)/np.linalg.norm(der_diffs,2)**2)[0]
 				stop_value   = np.mean(center_diffs)
 				

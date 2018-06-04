@@ -10,7 +10,7 @@ class Plant(Thread):
 	Compute derivatives for these surfaces and "spring" forces
 	'''
 	#Todo : ajouter les threads (un par plante ? ici)
-	def __init__(self,center = [0,0],ray =0):
+	def __init__(self,center = [0.0,0.0],ray =0):
 		Thread.__init__(self)
 		self.center = np.array(center).reshape(2,1)
 		self.ray    = ray
@@ -22,6 +22,8 @@ class Plant(Thread):
 		self.update_value = np.array([0,0])	
 		self.safety_ray   = ray
 		self.ennemy_ray   = ray
+		self.family     = None
+
 
 	def set_center(self,center):
 		self.center = np.array(center).reshape(2,1)
@@ -43,6 +45,9 @@ class Plant(Thread):
 
 	def set_y(self,y):
 		self.center[1]=y
+	
+	def set_family(self,family):
+		self.family = family
 
 	def add_friend(self,plant):
 		if not(isinstance(plant,list)):
@@ -84,7 +89,7 @@ class Plant(Thread):
 		dist = np.sqrt(np.transpose(X).dot(X))[0]
 		return dist
 
-	def derivate_diff_surf(self,P2,type_inter="friend"):
+	def derivate_diff_surf(self,P2,type_inter="friend",axis = 1):
 		D   = self.distance_plants(P2)
 		if type_inter=="friend":
 			rho = self.ray**2-P2.ray**2
@@ -106,7 +111,10 @@ class Plant(Thread):
 		common_surf = (R**2)*np.arccos(d/R)-d*np.sqrt(R**2-d**2)+(Rp**2)*np.arccos(dp/Rp)-dp*np.sqrt(Rp**2-dp**2) 
 		der_x = 2*(self.center[0]-P2.center[0])*(((D+X*R)*R*X**2)/np.sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/np.sqrt(1-Xp**2))/(D**2)
 		der_y = 2*(self.center[1]-P2.center[1])*(((D+X*R)*R*X**2)/np.sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/np.sqrt(1-Xp**2))/(D**2)
-		der_y += (P2.center[1]-self.center[1])*common_surf/((Rp/3)**2)
+		if axis : 
+			der_y += (P2.center[1]-self.center[1])*common_surf/((Rp/3)**2)
+		else : 
+			der_x += (P2.center[0]-self.center[0])*common_surf/((Rp/3)**2)
 		return np.array([der_x,der_y]*gauss).reshape(2,1)
 
 
@@ -114,10 +122,16 @@ class Plant(Thread):
 		X1 = self.center[0]-P2.center[0]
 		Y1 = self.center[1]-P2.center[1]
 		d  = self.distance_plants(P2)
-		X_comp = X1/d 
-		Y_comp = Y1/d 
+		X_comp = X1#/d 
+		Y_comp = Y1#/d 
 		der_spring = np.array([X_comp,Y_comp])
 		return der_spring
+	def derivate_alignment(self,P2,axis = 0):
+		if axis : 
+			der = np.array([0.0,2*(self.center[1]-P2.center[1])[0]]).reshape(2,1)
+		else : 
+			der = np.array([2*(self.center[0]-P2.center[0])[0],0.0]).reshape(2,1)
+		return der
 
 
 	def common_surf(P1,P2): 	

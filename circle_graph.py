@@ -14,10 +14,18 @@ from plants import Plant
 def test_garden(nb_plants,height,width):
 	#Definition of the garden 
 	gard = Garden(width,height)
-	colors = ['red','blue','grey','yellow','purple', 'pink', 'green']
+	colors = ['red', 'green']
+	fam ={}
+	for color in colors:
+		if color == 'red':
+			fam[color]	 = 'tomato'
+		elif color == 'green':
+			fam[color]= 'bean'
+		else : 
+			fam[color] = None
 	for _ in range(nb_plants):
 		center = [np.random.uniform(0,width,1)[0],np.random.uniform(0,height,1)[0]]
-		ray    = np.random.uniform(0,min(height,width)/10,1)
+		ray    = np.random.uniform(min(height,width)/30,min(height,width)/15,1)
 		safety_ray = np.random.uniform(0.1,1,1)*ray
 		ennemy_ray = np.random.uniform(1,2,1)*ray
 		P = Plant(center)
@@ -26,23 +34,27 @@ def test_garden(nb_plants,height,width):
 		P.set_safety_ray(safety_ray)
 		col = np.random.choice(colors,1)
 		P.set_color(col[0])
+		P.set_family(fam[col[0]])
 		gard.add_plant(P)
 	for P1 in gard.plantsList :
 		for P2 in gard.plantsList :  
 			friend_prob = np.random.uniform(0,1,1)
-			if friend_prob > 0.66:
+			if friend_prob > 0.85:
 				P1.add_friend(P2)
-			elif friend_prob < 0.33 : 
+			elif friend_prob < 0.15 : 
 				P1.add_ennemy(P2)
 			else : 
 				pass
+	P = Plant()
+	P.set_ray(0.1)
+	gard.add_plant(P)
 	t = time.time()
-	gard.optimize_garden(eps=1e-4,LR=1)
+	gard.optimize_garden(eps=1e-6,LR=1)
 	tim = time.time()-t
 	print(tim,gard.get_number_inter())
 	return 0
 if __name__ == '__main__':
-	'''t1 = time.time()
+	t1 = time.time()
 	P1 = Plant()
 	P1.set_center([0.0,1.0])
 	P1.set_ray(0.1)
@@ -67,7 +79,7 @@ if __name__ == '__main__':
 	P6.set_ray(0.1)
 	P6.set_color("orange")
 	
-	g = Garden(5,5)
+	g = Garden(2,2)
 	g.add_plant(P1)
 	g.add_plant(P2)
 	g.add_plant(P3)
@@ -90,15 +102,17 @@ if __name__ == '__main__':
 	P2.add_ennemy(P3)
 	P5.add_friend(P2)
 	P5.add_ennemy(P4)
-	P6.add_friend(P3)
-	P6.add_ennemy(P1)
+	#P6.add_friend(P3)
+	#P6.add_ennemy(P1)
 	print(P3.friendPlants[0].color,P3.ennemyPlants[0].color)
 	#print(derivate_surf_sameR(g.plantsList[0],g.plantsList[1])+g.plantsList[0].center)
 	print(P2.center,P2.name,P2.color)
-	print(P1.center,P1.name,P1.color)'''
-	#g.optimize_garden(eps=1e-4,LR=1e-1)
-	test_garden(6,5,5)
+	print(P1.center,P1.name,P1.color)
+	g.optimize_garden(eps=1e-6,LR=1e-1)
 	plt.show()
+	for _ in range(5):
+		test_garden(15,8,5)
+		plt.show()
 
 	"""c =  plt.Circle((P1.center[0],P1.center[1]),P1.ray,color ='red')
 	c1 = plt.Circle((P2.center[0],P2.center[1]),P2.ray)
@@ -106,7 +120,7 @@ if __name__ == '__main__':
 	ax.add_artist(c)
 	ax.add_artist(c1)	
 	c2 = plt.Circle((P3.center[0],P3.center[1]),P3.ray,color ='green')
-	ax.add_artist(c2)"""	
+	ax.add_artist(c2)"""
 	#ax.set_autoscaley_on(False)
 	#ax.plot(7*np.array(range(0,100)),np.array(range(0,100)))
 	#g.showing(fig,ax)
