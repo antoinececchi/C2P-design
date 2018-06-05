@@ -112,9 +112,9 @@ class Plant(Thread):
 		der_x = 2*(self.center[0]-P2.center[0])*(((D+X*R)*R*X**2)/np.sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/np.sqrt(1-Xp**2))/(D**2)
 		der_y = 2*(self.center[1]-P2.center[1])*(((D+X*R)*R*X**2)/np.sqrt(1-X**2)+((D+Xp*Rp)*Rp*Xp**2)/np.sqrt(1-Xp**2))/(D**2)
 		if axis : 
-			der_y += (P2.center[1]-self.center[1])*common_surf/((Rp/3)**2)
-		else : 
 			der_x += (P2.center[0]-self.center[0])*common_surf/((Rp/3)**2)
+		else : 
+			der_y += (P2.center[1]-self.center[1])*common_surf/((Rp/3)**2)
 		return np.array([der_x,der_y]*gauss).reshape(2,1)
 
 
