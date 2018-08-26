@@ -1,18 +1,21 @@
-from matplotlib import pyplot as plt 
+from matplotlib import pyplot as plt
 from pylab import *
 import time
 from garden import Garden
 from plants import Plant
-#TODO : 
+#TODO :
 #Split into several files
-#Add threads to accelerate the processing 
+#Add threads to accelerate the processing
 #Find a good stopping criteria (perhaps the movement of all the plants)
 #Remove the from pylab import *, quite dirty
 #Que veut dire "espacer des plantes " ? Pour l'instant les zones de sécurité sont de centre à centre.
+#Add a communication client _  server to test, first in python, then why not in
+#django if possible
 
 
 def test_garden(nb_plants,height,width):
-	#Definition of the garden 
+	#Definition of the garden
+	# Add some more plants, friends or not with the two already existing kinds
 	gard = Garden(width,height)
 	colors = ['red', 'green']
 	fam ={}
@@ -21,7 +24,7 @@ def test_garden(nb_plants,height,width):
 			fam[color]	 = 'tomato'
 		elif color == 'green':
 			fam[color]= 'bean'
-		else : 
+		else :
 			fam[color] = None
 	for _ in range(nb_plants):
 		center = [np.random.uniform(0,width,1)[0],np.random.uniform(0,height,1)[0]]
@@ -37,13 +40,13 @@ def test_garden(nb_plants,height,width):
 		P.set_family(fam[col[0]])
 		gard.add_plant(P)
 	for P1 in gard.plantsList :
-		for P2 in gard.plantsList :  
+		for P2 in gard.plantsList :
 			friend_prob = np.random.uniform(0,1,1)
 			if friend_prob > 0.85:
 				P1.add_friend(P2)
-			elif friend_prob < 0.15 : 
+			elif friend_prob < 0.15 :
 				P1.add_ennemy(P2)
-			else : 
+			else :
 				pass
 	P = Plant()
 	P.set_ray(0.1)
@@ -65,7 +68,7 @@ if __name__ == '__main__':
 	P2.set_color("red")
 	P3 = Plant()
 	P3.set_center([1.0,1.5])
-	P3.set_ray(0.12)	
+	P3.set_ray(0.12)
 	P3.set_color("purple")
 	P4 = Plant()
 	P4.set_center([2.0,0.0])
@@ -78,7 +81,7 @@ if __name__ == '__main__':
 	P6.set_center([0.3,0.24])
 	P6.set_ray(0.1)
 	P6.set_color("orange")
-	
+
 	g = Garden(2,2)
 	g.add_plant(P1)
 	g.add_plant(P2)
@@ -116,12 +119,11 @@ if __name__ == '__main__':
 
 	"""c =  plt.Circle((P1.center[0],P1.center[1]),P1.ray,color ='red')
 	c1 = plt.Circle((P2.center[0],P2.center[1]),P2.ray)
-	
+
 	ax.add_artist(c)
-	ax.add_artist(c1)	
+	ax.add_artist(c1)
 	c2 = plt.Circle((P3.center[0],P3.center[1]),P3.ray,color ='green')
 	ax.add_artist(c2)"""
 	#ax.set_autoscaley_on(False)
 	#ax.plot(7*np.array(range(0,100)),np.array(range(0,100)))
 	#g.showing(fig,ax)
-	

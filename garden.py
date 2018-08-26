@@ -2,14 +2,36 @@ from pylab import *
 import time
 from plants import Plant
 class Garden():
+	'''
+	Garden is a class intended to :
+	- possess a list of plants which can be managed through add_plant()
+	- figure out what is, given that list of plants, the best organisation for
+	the garden. This can be made through optimize_garden() which finds out the
+	optimal organization thanks to a gradient descent.
+	'''
+
+	# TODO: solve this error :
+	'''
+	Traceback (most recent call last): File "circle_graph.py", line 115, in <module>
+	test_garden(15,8,5) File "circle_graph.py", line 53, in test_garden gard.optimize_garden(eps=1e-6,LR=1)
+	File "/home/cecchi/Documents/Perso/C2P-design/garden.py", line 152, in optimize_garden
+	der_diffs    = old_ders-der_diff
+	ValueError: operands could not be broadcast together with shapes (22,1) (12,1)
+	'''
+
 	def __init__(self,height = 1,width = 1):
 		self.height     = height
 		self.width      = width
-		self.plantsList = [] 
+		self.plantsList = []
 		self.nb_plants  = 0
 		self.shown      = 0
-		
+
 	def add_plant(self,plant):
+		'''Add plants to the Garden
+			plant can be either :
+			 - a list of plants (objects) that will all be added to the Garden
+			 - a plant object
+		'''
 		if isinstance(plant,list):
 			self.plantsList += plant
 			self.nb_plants  += len(plant)
@@ -18,30 +40,40 @@ class Garden():
 			self.nb_plants  += 1
 
 	def showing(self,fig,ax):
+		'''
+		Mainly for debugging
+		Gives the possiblity to display all the plants in the garden.
+		'''
 		ax.clear()
 		if self.shown == 0 :
-			fig.show()	
+			fig.show()
 			print('là')
-		for plant in self.plantsList : 
+		for plant in self.plantsList :
 			c = plt.Circle((plant.center[0],plant.center[1]),plant.ray,color =plant.color)
 			ax.add_artist(c)
 			ax.set_xlim([0,self.width])
 			ax.set_ylim([0,self.height])
 			fig.canvas.draw()
-		if self.shown == 0 : 
+		if self.shown == 0 :
 			time.sleep(1)
 			self.shown = 1
 
 	def return_centers(self):
+		'''
+		returns a list of the centers of the plants in the garden.
+		'''
 		ret = self.plantsList[0].center
-		for plant in self.plantsList : 
+		for plant in self.plantsList :
 			if plant != self.plantsList[0]:
 				ret = np.concatenate((ret,plant.center))
 		return ret
 
 	def return_ders(self):
+		'''
+		returns the derivatives componants of all the plants in the garden
+		'''
 		ret = self.plantsList[0].update_value
-		for plant in self.plantsList : 
+		for plant in self.plantsList :
 			if plant != self.plantsList[0]:
 				ret = np.concatenate((ret,plant.update_value))
 		return ret
@@ -50,33 +82,34 @@ class Garden():
 		for P in self.plantsList:
 			nb_inter += len(P.friendPlants)+len(P.ennemyPlants)
 		return nb_inter
-		
+
 
 	def optimize_garden(self,eps,LR):
 		'''
 		This methods enables the gradient descent for the garden
-		For each plant, we compute : 
-		- Derivate of the surface when plants are close enough  
+		For each plant, we compute :
+		- Derivate of the surface when plants are close enough
 		- One for friends
 		- One for enemies
 		- One for all the "safety zones" of all the plants.
 		Still have to find an idea to deal with the cases in which the plants "follow" one another and leave to the infiny
 		TODO : problems of Nan when ||.|| = 0  for the updating of the LR for instance in the first garden when the sixth plant is not connected. Furthermore :
-		Problems when P1 is not connected either. 
+		Problems when P1 is not connected either.
 		'''
+		# TODO: check if momentum works better for LR
 		sum_der = 100*eps
 		fig = plt.figure(figsize=(self.width,self.height))
 		ax = fig.add_subplot(111)
 		ax.set_xlim([0,self.width])
 		print(self.width)
-		step = 0 
+		step = 0
 		t = time.time()
 		stop_value = 100
-		if self.height >= self.width : 
+		if self.height >= self.width :
 			axis = 0
 		else :
 			axis = 1
-		while  abs(stop_value) > eps: 
+		while  abs(stop_value) > eps:
 			step +=1
 			sum_der = 0
 			der_diff = np.empty([0,0])
@@ -92,7 +125,7 @@ class Garden():
 						sum_der         += np.sum(update_center)
 					elif dist<Gr-Gf or  dist<Gf-Gr:
 						pass
-					else : 
+					else :
 						update_center   += -1*Garden_plant.derivate_spring(friend)
 						sum_der         += np.sum(update_center)
 				#Ennemy
@@ -102,7 +135,7 @@ class Garden():
 					Gf   = ennemy.ennemy_ray
 					if dist<Gf+Gr and dist >= Gr-Gf and dist > Gf-Gr :
 						update_center   += 3*Garden_plant.derivate_diff_surf(ennemy,"ennemy",axis=axis)
-						sum_der         += np.sum(update_center)	
+						sum_der         += np.sum(update_center)
 				#Neutral
 				for plant_safe in self.plantsList:
 					dist = Garden_plant.distance_plants(plant_safe)
@@ -115,40 +148,40 @@ class Garden():
 							sum_der         += np.sum(update_center)
 						if Garden_plant.family is not None and Garden_plant.family == plant_safe.family:
 							update_center -= 15*Garden_plant.derivate_alignment(plant_safe,axis=axis)
-				
-				Garden_plant.update_value =  update_center 
+
+				Garden_plant.update_value =  update_center
 				if isnan(update_center[0]):
 					break
 				if der_diff.shape[0] :
 					der_diff = np.concatenate((der_diff,update_center))
-				else : 
+				else :
 					der_diff = update_center
 
-			if step > 2 : 
+			if step > 2 :
 				print("*"*100,step)
 				center_diffs = self.return_centers()-centers_old
 				der_diffs    = old_ders-der_diff
 				print(der_diffs,center_diffs)
 				LR           = (np.transpose(center_diffs).dot(der_diffs)/np.linalg.norm(der_diffs,2)**2)[0]
 				stop_value   = np.mean(center_diffs)
-				
+
 			centers_old = self.return_centers()
 			old_ders    = der_diff
 
 
 			for G_plant in self.plantsList:
 				G_plant.update_center(LR)
-				if G_plant.center[0]+G_plant.ray>self.width : 
+				if G_plant.center[0]+G_plant.ray>self.width :
 					G_plant.center[0] = self.width-G_plant.ray
-				if G_plant.center[0]-G_plant.ray<0 : 
+				if G_plant.center[0]-G_plant.ray<0 :
 					G_plant.center[0] = G_plant.ray
-				if G_plant.center[1]+G_plant.ray>self.height : 
+				if G_plant.center[1]+G_plant.ray>self.height :
 					G_plant.center[1] = self.height-G_plant.ray
-				if G_plant.center[1]-G_plant.ray<0 : 
+				if G_plant.center[1]-G_plant.ray<0 :
 					G_plant.center[1] = G_plant.ray
 
 			if step%1000==0 or step == 1:
 				self.showing(fig,ax)
 
-				
+
 		return 0
