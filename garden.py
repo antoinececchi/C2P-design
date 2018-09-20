@@ -97,6 +97,7 @@ class Garden():
 		Problems when P1 is not connected either.
 		'''
 		# TODO: check if momentum works better for LR
+		# Find nans
 		sum_der = 100*eps
 		fig = plt.figure(figsize=(self.width,self.height))
 		ax = fig.add_subplot(111)

@@ -17,13 +17,15 @@ def test_garden(nb_plants,height,width):
 	#Definition of the garden
 	# Add some more plants, friends or not with the two already existing kinds
 	gard = Garden(width,height)
-	colors = ['red', 'green']
+	colors = ['red', 'green', 'purple' ]
 	fam ={}
 	for color in colors:
 		if color == 'red':
-			fam[color]	 = 'tomato'
+			fam[color] = 'tomato'
 		elif color == 'green':
-			fam[color]= 'bean'
+			fam[color] = 'bean'
+		elif color == 'purple':
+			fam[color] = 'eggplant'
 		else :
 			fam[color] = None
 	for _ in range(nb_plants):
@@ -42,10 +44,12 @@ def test_garden(nb_plants,height,width):
 	for P1 in gard.plantsList :
 		for P2 in gard.plantsList :
 			friend_prob = np.random.uniform(0,1,1)
-			if friend_prob > 0.85:
-				P1.add_friend(P2)
-			elif friend_prob < 0.15 :
-				P1.add_ennemy(P2)
+			if P1.family == 'tomato':
+				if P2.family == 'bean':
+					P1.add_friend(P2)
+			if P1.family == 'bean' :
+				if P2.family == 'eggplant':
+					P1.add_ennemy(P2)
 			else :
 				pass
 	P = Plant()
