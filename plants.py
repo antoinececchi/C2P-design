@@ -1,5 +1,6 @@
 import numpy as np
 from threading import Thread
+# TODO: Make it a python module
 class Plant(Thread):
 	'''
 	Plant class enabling to :
